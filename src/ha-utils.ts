@@ -34,7 +34,8 @@ export function resolveAreaId(hass: Hass, areaRef: string): string | undefined {
 }
 
 /** Controllable entity_ids assigned to an area (directly or via their device).
- *  Entities carrying any of `excludeLabels` (HA Label ids) are skipped. */
+ *  Entities carrying any of `excludeLabels` (HA Label ids) — on the entity
+ *  itself or on its device — are skipped. */
 export function entitiesInArea(
   hass: Hass,
   areaId: string,
@@ -42,11 +43,15 @@ export function entitiesInArea(
 ): string[] {
   const entities = hass.entities ?? {};
   const exclude = new Set(excludeLabels.map((l) => l.toLowerCase()));
+  const hasExcludedLabel = (labels: string[] | null | undefined) =>
+    !!labels?.some((l) => exclude.has(l.toLowerCase()));
   const result: string[] = [];
   for (const e of Object.values(entities)) {
     if (e.hidden || e.hidden_by) continue;
     if (e.entity_category === "config" || e.entity_category === "diagnostic") continue;
-    if (exclude.size && e.labels?.some((l) => exclude.has(l.toLowerCase()))) continue;
+    const device = e.device_id ? hass.devices?.[e.device_id] : undefined;
+    if (exclude.size && (hasExcludedLabel(e.labels) || hasExcludedLabel(device?.labels)))
+      continue;
     if (!AREA_DOMAINS.has(domainOf(e.entity_id))) continue;
     const area =
       e.area_id ?? (e.device_id ? hass.devices?.[e.device_id]?.area_id : null);

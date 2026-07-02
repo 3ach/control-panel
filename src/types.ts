@@ -33,6 +33,7 @@ export interface HassEntityEntry {
 export interface HassDeviceEntry {
   id: string;
   area_id?: string | null;
+  labels?: string[] | null; // HA Label ids applied to the device
 }
 
 export interface Hass {
