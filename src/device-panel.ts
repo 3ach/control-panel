@@ -4,6 +4,7 @@ import type { RoomConfig, Hass, DeviceRef } from "./types.js";
 import {
   domainOf,
   friendlyName,
+  fmtNumber,
   isOn,
   isUnavailable,
   toggle,
@@ -226,14 +227,14 @@ export class DevicePanel extends LitElement {
     }
 
     if (domain === "climate") {
-      const target = entity.attributes.temperature ?? "—";
+      const target = entity.attributes.temperature != null ? fmtNumber(entity.attributes.temperature) : "—";
       const current = entity.attributes.current_temperature;
       const body = html`<div class="stepper">
         <button @click=${() => bumpTemperature(hass, dev.entity_id, -0.5)}>−</button>
         <span class="big">${target}°</span>
         <button @click=${() => bumpTemperature(hass, dev.entity_id, +0.5)}>+</button>
       </div>`;
-      const sub = current != null ? `now ${current}° · ${entity.state}` : entity.state;
+      const sub = current != null ? `now ${fmtNumber(current)}° · ${entity.state}` : entity.state;
       return this.card(name, sub, nothing, body);
     }
 
@@ -291,7 +292,13 @@ export class DevicePanel extends LitElement {
       </div>`;
     }
     const room = this.room;
-    const devices = roomDevices(this.hass, room);
+    // Keep the area/domain ordering, but push unavailable devices to the end so
+    // they don't bury working ones (Array.sort is stable).
+    const devices = [...roomDevices(this.hass, room)].sort(
+      (a, b) =>
+        Number(isUnavailable(this.hass?.states[a.entity_id])) -
+        Number(isUnavailable(this.hass?.states[b.entity_id]))
+    );
     return html`
       <header>
         <h2>${room.name}</h2>

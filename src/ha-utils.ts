@@ -146,9 +146,18 @@ export function coverCommand(
   hass.callService("cover", `${cmd}_cover`, { entity_id: entityId });
 }
 
+/** Round numeric-looking values to 2 decimals (dropping trailing zeros); pass
+ *  non-numeric values (e.g. "on", "unknown") through unchanged. */
+export function fmtNumber(value: string | number): string {
+  if (value === "" || value == null) return String(value ?? "");
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? String(Math.round(n * 100) / 100) : String(value);
+}
+
 /** A short, human display value for read-only entities. */
 export function displayState(entity: HassEntity | undefined): string {
   if (!entity) return "—";
   const unit = entity.attributes.unit_of_measurement;
-  return unit ? `${entity.state} ${unit}` : entity.state;
+  const val = fmtNumber(entity.state);
+  return unit ? `${val} ${unit}` : val;
 }
