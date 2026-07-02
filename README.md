@@ -83,8 +83,9 @@ HAOS never builds anything.
    ```yaml
    panel_custom:
      - name: control-panel            # must match the custom element tag
-       url_path: home                 # sidebar route -> /home
-       sidebar_title: Home
+       url_path: floorplan            # sidebar route -> /floorplan (must be unique;
+                                      # don't use `home` — HA 25.12+ reserves it)
+       sidebar_title: Floor Plan
        sidebar_icon: mdi:floor-plan
        module_url: /hacsfiles/control-panel/control-panel.js
        config: !include control-panel-floorplan.yaml

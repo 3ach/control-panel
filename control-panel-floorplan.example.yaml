@@ -5,8 +5,8 @@
 #
 #   panel_custom:
 #     - name: control-panel
-#       url_path: home
-#       sidebar_title: Home
+#       url_path: floorplan   # must be unique; avoid `home` (HA 25.12+ reserves it)
+#       sidebar_title: Floor Plan
 #       sidebar_icon: mdi:floor-plan
 #       module_url: /hacsfiles/control-panel/control-panel.js
 #       config: !include control-panel-floorplan.yaml
