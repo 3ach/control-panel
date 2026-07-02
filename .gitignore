@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.claude/settings.local.json
+
+# Private real floor plan (address + layout) — never commit; only the
+# *.example.yaml template is public.
+control-panel-floorplan.yaml

@@ -1,0 +1,21 @@
+{
+  "name": "control-panel",
+  "version": "1.0.0",
+  "description": "Isometric blueprint control panel for Home Assistant",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "deploy": "npm run build && mkdir -p \"${HA_WWW:?set HA_WWW to your Home Assistant config/www dir}/control-panel\" && cp dist/control-panel.js \"$HA_WWW/control-panel/control-panel.js\" && echo \"Copied to $HA_WWW/control-panel/control-panel.js\"",
+    "release": "npm version patch && git push --follow-tags"
+  },
+  "dependencies": {
+    "lit": "^3.1.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  }
+}

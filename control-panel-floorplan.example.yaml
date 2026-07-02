@@ -1,0 +1,93 @@
+# Example floor plan for the Control Panel custom panel.
+#
+# Copy this to your Home Assistant config dir as `control-panel-floorplan.yaml`,
+# edit it to match your home, and wire it up in configuration.yaml:
+#
+#   panel_custom:
+#     - name: control-panel
+#       url_path: home
+#       sidebar_title: Home
+#       sidebar_icon: mdi:floor-plan
+#       module_url: /hacsfiles/control-panel/control-panel.js
+#       config: !include control-panel-floorplan.yaml
+#
+# Coordinates are in feet: x = width (left/right), y = length (top/bottom).
+# `area` points at a Home Assistant Area (area_id or display name); the panel
+# auto-fills that area's controllable entities. `notch` carves the front-right
+# corner into an L-shape. Omit `levels` for a single-floor home.
+floorplan:
+  title: "My Home"
+  levels:
+    - id: main
+      name: Main
+    - id: upper
+      name: Upstairs
+  rooms:
+    # ---- Main floor ----
+    - id: living_room
+      name: Living Room
+      level: main
+      x: 0
+      y: 0
+      w: 12
+      d: 10
+      notch: # front-right corner carved out for the Kitchen
+        w: 4
+        d: 4
+      color: "#ff5a5f"
+      area: Living Room
+    - id: kitchen
+      name: Kitchen
+      level: main
+      x: 8
+      y: 6
+      w: 4
+      d: 4
+      color: "#ffd23f"
+      area: Kitchen
+    - id: bedroom
+      name: Bedroom
+      level: main
+      x: 0
+      y: 10
+      w: 6
+      d: 8
+      color: "#9b5de5"
+      area: Bedroom
+    - id: bathroom
+      name: Bathroom
+      level: main
+      x: 6
+      y: 10
+      w: 6
+      d: 8
+      color: "#2ec4b6"
+      area: Bathroom
+    # ---- Upstairs ----
+    - id: office
+      name: Office
+      level: upper
+      x: 0
+      y: 0
+      w: 7
+      d: 8
+      color: "#3fa7ff"
+      area: Office
+    - id: guest_room
+      name: Guest Room
+      level: upper
+      x: 7
+      y: 0
+      w: 5
+      d: 8
+      color: "#ff924c"
+      area: Guest Room
+    - id: upstairs_bath
+      name: Upstairs Bath
+      level: upper
+      x: 0
+      y: 8
+      w: 12
+      d: 5
+      color: "#4fc3f7"
+      area: Upstairs Bath

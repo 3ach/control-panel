@@ -1,0 +1,28 @@
+name: release
+
+# Builds the single-file panel bundle and attaches it to a GitHub Release
+# whenever you push a tag like v1.2.3. HACS reads releases to offer OTA updates,
+# so you never have to build or upload the bundle by hand.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Publish release with bundle
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/control-panel.js
+          generate_release_notes: true
