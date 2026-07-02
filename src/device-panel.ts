@@ -17,6 +17,9 @@ import {
   setCoverPosition,
   displayState,
   roomDevices,
+  groupRoomDevices,
+  isSensorGroup,
+  type SensorGroup,
   DEFAULT_HIDE_LABELS,
 } from "./ha-utils.js";
 
@@ -190,6 +193,20 @@ export class DevicePanel extends LitElement {
       font-size: 22px;
       font-weight: 800;
     }
+    /* Combined multi-sensor card: labeled readings in a grid. */
+    .readings {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 14px;
+      margin-top: 10px;
+    }
+    .readings.environmental {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .readings .value {
+      font-weight: 700;
+      font-size: 15px;
+    }
   `;
 
   private renderDevice(dev: DeviceRef): TemplateResult {
@@ -271,6 +288,30 @@ export class DevicePanel extends LitElement {
     return this.card(name, "", nothing, html`<div class="value big">${displayState(entity)}</div>`);
   }
 
+  /** One card for a multi-sensor device (smart outlet, ambient sensor…). */
+  private renderGroup(group: SensorGroup): TemplateResult {
+    const hass = this.hass!;
+    const readings = group.items.map(({ ref, label }) => {
+      const entity = hass.states[ref.entity_id];
+      const unavailable = isUnavailable(entity);
+      return html`<div>
+        <div class="sub">${label}</div>
+        <div class="value" title=${unavailable ? "unavailable" : nothing}>
+          ${unavailable ? "?" : displayState(entity)}
+        </div>
+      </div>`;
+    });
+    return html`<div class="device">
+      <div class="row">
+        <div>
+          <div class="name">${group.name}</div>
+          <div class="sub">${group.kind === "electrical" ? "power monitor" : "environment"}</div>
+        </div>
+      </div>
+      <div class="readings ${group.kind}">${readings}</div>
+    </div>`;
+  }
+
   private toggleBtn(entityId: string, on: boolean): TemplateResult {
     return html`<button
       class="switch"
@@ -310,21 +351,25 @@ export class DevicePanel extends LitElement {
       </div>`;
     }
     const room = this.room;
+    // A group is unavailable only when every one of its sensors is.
+    const dead = (item: DeviceRef | SensorGroup): boolean =>
+      isSensorGroup(item)
+        ? item.items.every((i) => isUnavailable(this.hass?.states[i.ref.entity_id]))
+        : isUnavailable(this.hass?.states[item.entity_id]);
     // Keep the area/domain ordering, but push unavailable devices to the end so
     // they don't bury working ones (Array.sort is stable).
-    const devices = [...roomDevices(this.hass, room, this.excludeLabels)].sort(
-      (a, b) =>
-        Number(isUnavailable(this.hass?.states[a.entity_id])) -
-        Number(isUnavailable(this.hass?.states[b.entity_id]))
-    );
+    const items = groupRoomDevices(
+      this.hass,
+      roomDevices(this.hass, room, this.excludeLabels)
+    ).sort((a, b) => Number(dead(a)) - Number(dead(b)));
     return html`
       <header>
         <h2>${room.name}</h2>
-        <p>${devices.length} device${devices.length === 1 ? "" : "s"}</p>
+        <p>${items.length} device${items.length === 1 ? "" : "s"}</p>
       </header>
       <div class="list">
-        ${devices.length
-          ? devices.map((d) => this.renderDevice(d))
+        ${items.length
+          ? items.map((d) => (isSensorGroup(d) ? this.renderGroup(d) : this.renderDevice(d)))
           : html`<div class="sub" style="padding:6px 4px">
               No devices found for area “${room.area ?? room.name}”.
             </div>`}

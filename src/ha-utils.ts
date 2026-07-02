@@ -94,6 +94,111 @@ export function roomDevices(
   return room.devices ?? [];
 }
 
+// --- Multi-sensor devices -> one combined card -------------------------------
+
+export type SensorGroupKind = "electrical" | "environmental";
+
+// device_class sets that merge into a combined card when one physical device
+// exposes 2+ of them (e.g. a smart outlet's power/voltage/current sensors, or
+// an ambient sensor's temperature/humidity/pressure).
+const GROUP_CLASSES: [SensorGroupKind, Set<string>][] = [
+  [
+    "electrical",
+    new Set([
+      "power",
+      "energy",
+      "current",
+      "voltage",
+      "frequency",
+      "power_factor",
+      "apparent_power",
+      "reactive_power",
+    ]),
+  ],
+  [
+    "environmental",
+    new Set(["temperature", "humidity", "pressure", "atmospheric_pressure", "illuminance"]),
+  ],
+];
+
+const groupKindOf = (entity: HassEntity | undefined): SensorGroupKind | null => {
+  const dc = entity?.attributes.device_class;
+  if (typeof dc !== "string") return null;
+  for (const [kind, classes] of GROUP_CLASSES) if (classes.has(dc)) return kind;
+  return null;
+};
+
+export interface SensorGroupItem {
+  ref: DeviceRef;
+  /** Short reading label: the friendly name minus the device-name prefix. */
+  label: string;
+}
+
+export interface SensorGroup {
+  kind: SensorGroupKind;
+  name: string;
+  items: SensorGroupItem[];
+}
+
+export const isSensorGroup = (item: DeviceRef | SensorGroup): item is SensorGroup =>
+  "items" in item;
+
+/** Merge sensors that belong to one physical device (and one kind) into a
+ *  SensorGroup; everything else passes through untouched. A group takes the
+ *  list position of its first member. */
+export function groupRoomDevices(
+  hass: Hass | undefined,
+  refs: DeviceRef[]
+): (DeviceRef | SensorGroup)[] {
+  if (!hass) return refs;
+  const keyOf = (ref: DeviceRef): string | null => {
+    if (domainOf(ref.entity_id) !== "sensor") return null;
+    const kind = groupKindOf(hass.states[ref.entity_id]);
+    const deviceId = hass.entities?.[ref.entity_id]?.device_id;
+    return kind && deviceId ? `${deviceId}::${kind}` : null;
+  };
+
+  const byKey = new Map<string, DeviceRef[]>();
+  for (const ref of refs) {
+    const key = keyOf(ref);
+    if (!key) continue;
+    if (!byKey.has(key)) byKey.set(key, []);
+    byKey.get(key)!.push(ref);
+  }
+
+  const emitted = new Set<string>();
+  const out: (DeviceRef | SensorGroup)[] = [];
+  for (const ref of refs) {
+    const key = keyOf(ref);
+    const members = key ? byKey.get(key)! : [];
+    if (!key || members.length < 2) {
+      out.push(ref);
+      continue;
+    }
+    if (emitted.has(key)) continue;
+    emitted.add(key);
+    const [deviceId, kind] = key.split("::") as [string, SensorGroupKind];
+    const device = hass.devices?.[deviceId];
+    const name =
+      device?.name_by_user ?? device?.name ?? friendlyName(hass, members[0].entity_id);
+    out.push({
+      kind,
+      name,
+      items: members.map((m) => ({ ref: m, label: readingLabel(hass, m, name) })),
+    });
+  }
+  return out;
+}
+
+/** "Office Outlet Power" on device "Office Outlet" -> "Power". */
+function readingLabel(hass: Hass, ref: DeviceRef, deviceName: string): string {
+  const full = ref.name ?? friendlyName(hass, ref.entity_id);
+  const stripped = full.toLowerCase().startsWith(deviceName.toLowerCase())
+    ? full.slice(deviceName.length).replace(/^[\s:·–-]+/, "")
+    : full;
+  return stripped || full;
+}
+
 export function friendlyName(hass: Hass | undefined, entityId: string): string {
   const e = hass?.states[entityId];
   return (

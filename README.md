@@ -80,6 +80,19 @@ Two ways to keep an entity out of a room's auto-filled list:
 HA **groups** are auto-collapsed: if a group entity and its members are both in
 an area, only the group is shown (create the group, assign it to the area).
 
+### Combined sensor cards
+
+Multi-sensor devices are folded into a single card instead of one card per
+reading, based on each sensor's `device_class`:
+
+- **Power monitor** (smart outlets, energy meters): power, energy, current,
+  voltage, frequency, power factor.
+- **Environment** (ambient sensors): temperature, humidity, pressure,
+  illuminance.
+
+Sensors group when they share a parent **device** in HA and 2+ of them fall in
+the same category; anything else stays on its own card.
+
 ## Install into Home Assistant (via HACS — OTA updates)
 
 This is the recommended path: HACS pulls the built bundle from this repo's

@@ -34,6 +34,8 @@ export interface HassDeviceEntry {
   id: string;
   area_id?: string | null;
   labels?: string[] | null; // HA Label ids applied to the device
+  name?: string | null;
+  name_by_user?: string | null;
 }
 
 export interface Hass {

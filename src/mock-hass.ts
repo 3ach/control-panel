@@ -1,4 +1,4 @@
-import type { Hass, HassEntity, HassAreaEntry, HassEntityEntry } from "./types.js";
+import type { Hass, HassEntity, HassAreaEntry, HassEntityEntry, HassDeviceEntry } from "./types.js";
 
 // A throwaway Home Assistant stand-in for local design work. It holds entity
 // state + a fake area registry in memory and implements just enough of
@@ -11,14 +11,16 @@ interface Seed {
   state: string;
   area: string; // area display name; used to build the fake registry
   attributes?: HassEntity["attributes"];
+  device?: string; // parent device display name (for multi-sensor grouping)
 }
 
 const seed = (
   entity_id: string,
   state: string,
   area: string,
-  attributes: HassEntity["attributes"] = {}
-): Seed => ({ entity_id, state, area, attributes });
+  attributes: HassEntity["attributes"] = {},
+  device?: string
+): Seed => ({ entity_id, state, area, attributes, device });
 
 // Seeds for the bundled DEMO layout (src/config.ts). Area names must match the
 // demo rooms' `area` fields so `npm run dev` shows populated rooms.
@@ -46,6 +48,10 @@ const SEED: Seed[] = [
     temperature: 21,
     current_temperature: 20.6,
   }),
+  // Multi-sensor ambient sensor -> one combined "environment" card.
+  seed("sensor.bedroom_ambient_temperature", "68.4", "Bedroom", { friendly_name: "Bedroom Ambient Temperature", device_class: "temperature", unit_of_measurement: "°F" }, "Bedroom Ambient"),
+  seed("sensor.bedroom_ambient_humidity", "41", "Bedroom", { friendly_name: "Bedroom Ambient Humidity", device_class: "humidity", unit_of_measurement: "%" }, "Bedroom Ambient"),
+  seed("sensor.bedroom_ambient_pressure", "14.53", "Bedroom", { friendly_name: "Bedroom Ambient Pressure", device_class: "pressure", unit_of_measurement: "psi" }, "Bedroom Ambient"),
   seed("light.bathroom", "off", "Bathroom", { friendly_name: "Bathroom Vanity" }),
   seed("switch.bathroom_fan", "off", "Bathroom", { friendly_name: "Bathroom Fan" }),
 
@@ -53,6 +59,14 @@ const SEED: Seed[] = [
   seed("light.office", "on", "Office", { friendly_name: "Office", brightness: 170 }),
   seed("switch.desk_lamp", "on", "Office", { friendly_name: "Desk Lamp" }),
   seed("media_player.office", "paused", "Office", { friendly_name: "Office Speaker" }),
+  // Multi-sensor smart outlet -> one combined "power monitor" card.
+  seed("sensor.office_outlet_power", "142.7", "Office", { friendly_name: "Office Outlet Power", device_class: "power", unit_of_measurement: "W" }, "Office Outlet"),
+  seed("sensor.office_outlet_demand", "138.2", "Office", { friendly_name: "Office Outlet Instantaneous Demand", device_class: "power", unit_of_measurement: "W" }, "Office Outlet"),
+  seed("sensor.office_outlet_voltage", "121.9", "Office", { friendly_name: "Office Outlet Voltage", device_class: "voltage", unit_of_measurement: "V" }, "Office Outlet"),
+  seed("sensor.office_outlet_current", "1.17", "Office", { friendly_name: "Office Outlet Current", device_class: "current", unit_of_measurement: "A" }, "Office Outlet"),
+  seed("sensor.office_outlet_frequency", "60.02", "Office", { friendly_name: "Office Outlet Frequency", device_class: "frequency", unit_of_measurement: "Hz" }, "Office Outlet"),
+  seed("sensor.office_outlet_power_factor", "87", "Office", { friendly_name: "Office Outlet Power Factor", device_class: "power_factor", unit_of_measurement: "%" }, "Office Outlet"),
+  seed("sensor.office_outlet_energy", "193044.74", "Office", { friendly_name: "Office Outlet Summation Delivered", device_class: "energy", unit_of_measurement: "Wh" }, "Office Outlet"),
   seed("light.guest_room", "off", "Guest Room", { friendly_name: "Guest Room" }),
   seed("cover.guest_blinds", "open", "Guest Room", {
     friendly_name: "Guest Blinds",
@@ -71,6 +85,7 @@ export function createMockHass(onUpdate: Listener): Hass {
   const states: Record<string, HassEntity> = {};
   const areas: Record<string, HassAreaEntry> = {};
   const entities: Record<string, HassEntityEntry> = {};
+  const devices: Record<string, HassDeviceEntry> = {};
 
   for (const s of SEED) {
     states[s.entity_id] = {
@@ -80,7 +95,10 @@ export function createMockHass(onUpdate: Listener): Hass {
     };
     const areaId = slug(s.area);
     areas[areaId] ??= { area_id: areaId, name: s.area };
-    entities[s.entity_id] = { entity_id: s.entity_id, area_id: areaId };
+    const deviceId = s.device ? slug(s.device) : undefined;
+    if (s.device && deviceId)
+      devices[deviceId] ??= { id: deviceId, area_id: areaId, name: s.device };
+    entities[s.entity_id] = { entity_id: s.entity_id, area_id: areaId, device_id: deviceId };
   }
 
   function patch(entity_id: string, next: Partial<HassEntity>) {
@@ -104,7 +122,7 @@ export function createMockHass(onUpdate: Listener): Hass {
       states: { ...states },
       areas,
       entities,
-      devices: {},
+      devices,
       async callService(_domain, service, data = {}) {
         const ids = ([] as string[]).concat(data.entity_id ?? []);
         for (const id of ids) {
