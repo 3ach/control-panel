@@ -95,14 +95,14 @@ HAOS never builds anything.
 
 **Updating:**
 
-- **Your layout** lives in `control-panel-floorplan.yaml` on HA. Edit it there,
-  then reload the panel (a browser refresh; changing `panel_custom` structure
-  needs an HA restart, but editing the included layout usually just needs a
-  refresh).
+- **Your layout** lives in `control-panel-floorplan.yaml` on HA. It's read from
+  `configuration.yaml` at startup, so after editing it **restart Home Assistant**
+  (then hard-refresh the browser) for the change to show.
 - **The panel code** updates over the air: run `npm run release` here (bumps the
   version, tags, pushes; CI builds + attaches the bundle). In HA, HACS shows an
   update for Control Panel (or *HACS → ⋮ → Reload* to check now) — click
-  **Update**, then hard-refresh (Ctrl/Cmd-Shift-R).
+  **Update**, then hard-refresh (Ctrl/Cmd-Shift-R). No HA restart needed for a
+  code-only update.
 
 ## Deploy manually (no HACS)
 
