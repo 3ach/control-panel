@@ -36,7 +36,11 @@ const SEED: Seed[] = [
   seed("switch.coffee_machine", "on", "Kitchen", { friendly_name: "Coffee Machine" }),
   seed("switch.dishwasher", "off", "Kitchen", { friendly_name: "Dishwasher" }),
   seed("light.bedroom", "off", "Bedroom", { friendly_name: "Bedroom", brightness: 0 }),
-  seed("cover.bedroom_blinds", "closed", "Bedroom", { friendly_name: "Bedroom Blinds" }),
+  seed("cover.bedroom_blinds", "closed", "Bedroom", {
+    friendly_name: "Bedroom Blinds",
+    current_position: 0,
+    supported_features: 7, // OPEN | CLOSE | SET_POSITION
+  }),
   seed("climate.bedroom", "heat", "Bedroom", {
     friendly_name: "Bedroom",
     temperature: 21,
@@ -50,7 +54,11 @@ const SEED: Seed[] = [
   seed("switch.desk_lamp", "on", "Office", { friendly_name: "Desk Lamp" }),
   seed("media_player.office", "paused", "Office", { friendly_name: "Office Speaker" }),
   seed("light.guest_room", "off", "Guest Room", { friendly_name: "Guest Room" }),
-  seed("cover.guest_blinds", "open", "Guest Room", { friendly_name: "Guest Blinds" }),
+  seed("cover.guest_blinds", "open", "Guest Room", {
+    friendly_name: "Guest Blinds",
+    current_position: 100,
+    supported_features: 7,
+  }),
   seed("light.upstairs_bath", "off", "Upstairs Bath", { friendly_name: "Upstairs Bath" }),
   seed("switch.upstairs_bath_fan", "off", "Upstairs Bath", { friendly_name: "Upstairs Bath Fan" }),
   seed("binary_sensor.upstairs_leak", "off", "Upstairs Bath", { friendly_name: "Leak Sensor" }),
@@ -111,11 +119,15 @@ export function createMockHass(onUpdate: Listener): Hass {
           } else if (service === "turn_off") patch(id, { state: "off" });
           else if (service === "set_temperature")
             patch(id, { attributes: { temperature: data.temperature } });
-          else if (service === "open_cover") patch(id, { state: "open" });
-          else if (service === "close_cover") patch(id, { state: "closed" });
-          else if (service === "stop_cover") {
-            /* no-op */
-          }
+          else if (service === "open_cover")
+            patch(id, { state: "open", attributes: { current_position: 100 } });
+          else if (service === "close_cover")
+            patch(id, { state: "closed", attributes: { current_position: 0 } });
+          else if (service === "set_cover_position")
+            patch(id, {
+              state: data.position > 0 ? "open" : "closed",
+              attributes: { current_position: data.position },
+            });
         }
         emit();
         return undefined;

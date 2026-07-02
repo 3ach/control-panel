@@ -44,7 +44,7 @@ export function entitiesInArea(
   const exclude = new Set(excludeLabels.map((l) => l.toLowerCase()));
   const result: string[] = [];
   for (const e of Object.values(entities)) {
-    if (e.hidden_by) continue;
+    if (e.hidden || e.hidden_by) continue;
     if (e.entity_category === "config" || e.entity_category === "diagnostic") continue;
     if (exclude.size && e.labels?.some((l) => exclude.has(l.toLowerCase()))) continue;
     if (!AREA_DOMAINS.has(domainOf(e.entity_id))) continue;
@@ -157,9 +157,34 @@ export function bumpTemperature(hass: Hass, entityId: string, delta: number): vo
 export function coverCommand(
   hass: Hass,
   entityId: string,
-  cmd: "open" | "close" | "stop"
+  cmd: "open" | "close"
 ): void {
   hass.callService("cover", `${cmd}_cover`, { entity_id: entityId });
+}
+
+/** Set a cover's position from a 0..100 percentage (100 = fully open). */
+export function setCoverPosition(hass: Hass, entityId: string, pct: number): void {
+  hass.callService("cover", "set_cover_position", {
+    entity_id: entityId,
+    position: Math.round(pct),
+  });
+}
+
+const COVER_SUPPORT_SET_POSITION = 4;
+
+/** The cover's 0..100 position (100 = open), or null if it doesn't report one. */
+export function coverPositionPct(entity: HassEntity | undefined): number | null {
+  const p = entity?.attributes.current_position;
+  return typeof p === "number" ? Math.round(p) : null;
+}
+
+/** True if the cover accepts cover.set_cover_position. */
+export function coverSupportsPosition(entity: HassEntity | undefined): boolean {
+  const features = entity?.attributes.supported_features;
+  if (typeof features === "number") return (features & COVER_SUPPORT_SET_POSITION) !== 0;
+  // Some integrations omit supported_features in older HA; fall back to the
+  // presence of a reported position.
+  return coverPositionPct(entity) != null;
 }
 
 /** Round numeric-looking values to 2 decimals (dropping trailing zeros); pass

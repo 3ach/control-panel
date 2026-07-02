@@ -22,6 +22,9 @@ export interface HassEntityEntry {
   entity_id: string;
   area_id?: string | null;
   device_id?: string | null;
+  /** The frontend registry (`hass.entities`) reports hidden entities via the
+   *  boolean `hidden`; `hidden_by` only exists in the backend registry API. */
+  hidden?: boolean;
   hidden_by?: string | null;
   entity_category?: string | null; // "config" | "diagnostic" | null
   labels?: string[] | null; // HA Label ids applied to the entity

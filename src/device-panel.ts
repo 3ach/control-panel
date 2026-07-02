@@ -12,6 +12,9 @@ import {
   brightnessPct,
   bumpTemperature,
   coverCommand,
+  coverPositionPct,
+  coverSupportsPosition,
+  setCoverPosition,
   displayState,
   roomDevices,
   DEFAULT_HIDE_LABELS,
@@ -241,12 +244,25 @@ export class DevicePanel extends LitElement {
     }
 
     if (domain === "cover") {
+      const pos = coverPositionPct(entity);
+      const slider = coverSupportsPosition(entity)
+        ? html`<input
+            type="range"
+            min="0"
+            max="100"
+            aria-label="Position"
+            .value=${String(pos ?? (isOn(entity) ? 100 : 0))}
+            @change=${(e: Event) =>
+              setCoverPosition(hass, dev.entity_id, +(e.target as HTMLInputElement).value)}
+          />`
+        : nothing;
       const body = html`<div class="btns">
-        <button @click=${() => coverCommand(hass, dev.entity_id, "open")}>Open</button>
-        <button @click=${() => coverCommand(hass, dev.entity_id, "stop")}>Stop</button>
-        <button @click=${() => coverCommand(hass, dev.entity_id, "close")}>Close</button>
-      </div>`;
-      return this.card(name, entity.state, nothing, body);
+          <button @click=${() => coverCommand(hass, dev.entity_id, "open")}>Open</button>
+          <button @click=${() => coverCommand(hass, dev.entity_id, "close")}>Close</button>
+        </div>
+        ${slider}`;
+      const sub = pos != null && pos > 0 && pos < 100 ? `${entity.state} · ${pos}%` : entity.state;
+      return this.card(name, sub, nothing, body);
     }
 
     // sensor / binary_sensor / everything else: read-only value on its own
