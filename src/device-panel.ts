@@ -26,14 +26,15 @@ export class DevicePanel extends LitElement {
 
   static override styles = css`
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
       height: 100%;
       color: #221c2e;
       --ink: #221c2e;
       font: 400 14px/1.4 "Trebuchet MS", system-ui, sans-serif;
     }
     .empty {
-      height: 100%;
+      flex: 1 1 auto;
       display: grid;
       place-items: center;
       text-align: center;
@@ -42,8 +43,14 @@ export class DevicePanel extends LitElement {
       padding: 24px;
     }
     header {
+      flex: 0 0 auto;
       padding: 20px 18px 14px;
       border-bottom: 3px solid var(--ink);
+    }
+    /* Suppress the tap focus outline on the touch controls. */
+    button:focus,
+    input:focus {
+      outline: none;
     }
     header h2 {
       margin: 0;
@@ -61,6 +68,8 @@ export class DevicePanel extends LitElement {
       font-weight: 700;
     }
     .list {
+      flex: 1 1 auto;
+      min-height: 0;
       padding: 14px;
       display: flex;
       flex-direction: column;

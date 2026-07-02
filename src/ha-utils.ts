@@ -44,11 +44,23 @@ export function entitiesInArea(hass: Hass, areaId: string): string[] {
     if (!hass.states[e.entity_id]) continue; // skip not-yet-loaded entities
     result.push(e.entity_id);
   }
+
+  // Collapse HA groups (group helpers, light/switch groups): a group entity
+  // exposes its members via the `entity_id` attribute. If the group is in this
+  // area, drop its members so the room shows the single virtual device instead
+  // of the group plus each underlying entity (which also de-dupes doubles).
+  const members = new Set<string>();
+  for (const id of result) {
+    const g = hass.states[id]?.attributes.entity_id;
+    if (Array.isArray(g)) for (const m of g) members.add(m);
+  }
+  const collapsed = result.filter((id) => !members.has(id));
+
   const rank = (id: string) => {
     const i = AREA_DOMAIN_ORDER.indexOf(domainOf(id));
     return i === -1 ? AREA_DOMAIN_ORDER.length : i;
   };
-  return result.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  return collapsed.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
 /** The effective devices for a room: explicit list wins, else Area auto-fill. */

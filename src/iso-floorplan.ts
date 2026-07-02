@@ -33,6 +33,11 @@ export class IsoFloorplan extends LitElement {
       -webkit-tap-highlight-color: transparent;
       transition: transform 160ms ease;
     }
+    /* Touch/kiosk panel: the lift animation is the affordance; suppress the
+       browser focus outline that otherwise boxes a tapped room. */
+    .room:focus {
+      outline: none;
+    }
     .room.selected {
       transform: translateY(-14px);
     }
