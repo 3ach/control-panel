@@ -1,6 +1,6 @@
 {
   "name": "control-panel",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Isometric blueprint control panel for Home Assistant",
   "type": "module",
   "scripts": {
