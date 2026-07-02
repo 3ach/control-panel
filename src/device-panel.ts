@@ -93,8 +93,13 @@ export class DevicePanel extends LitElement {
       justify-content: space-between;
       gap: 12px;
     }
+    .row > * {
+      min-width: 0; /* let long content wrap instead of overflowing the card */
+    }
     .name {
       font-weight: 800;
+      font-size: 17px;
+      overflow-wrap: anywhere;
     }
     .sub {
       color: #8a8276;
@@ -104,6 +109,7 @@ export class DevicePanel extends LitElement {
     .value {
       font-variant-numeric: tabular-nums;
       color: var(--ink);
+      overflow-wrap: anywhere;
     }
     .switch {
       box-sizing: border-box;
@@ -190,11 +196,8 @@ export class DevicePanel extends LitElement {
     if (unavailable) {
       return html`<div class="device unavailable">
         <div class="row">
-          <div>
-            <div class="name">${name}</div>
-            <div class="sub">${dev.entity_id}</div>
-          </div>
-          <div class="value">unavailable</div>
+          <div class="name">${name}</div>
+          <div class="value big" title="unavailable">?</div>
         </div>
       </div>`;
     }
@@ -212,12 +215,14 @@ export class DevicePanel extends LitElement {
               setBrightnessPct(hass, dev.entity_id, +(e.target as HTMLInputElement).value)}
           />`
         : nothing;
-      return this.card(name, on ? `${pct || 100}%` : "off", this.toggleBtn(dev.entity_id, on), body);
+      // No subtitle: the toggle shows on/off and the slider shows the level.
+      return this.card(name, "", this.toggleBtn(dev.entity_id, on), body);
     }
 
     if (["switch", "fan", "input_boolean", "media_player"].includes(domain)) {
       const on = isOn(entity);
-      return this.card(name, on ? "on" : "off", this.toggleBtn(dev.entity_id, on));
+      // No subtitle: the toggle already communicates on/off.
+      return this.card(name, "", this.toggleBtn(dev.entity_id, on));
     }
 
     if (domain === "climate") {
@@ -241,12 +246,10 @@ export class DevicePanel extends LitElement {
       return this.card(name, entity.state, nothing, body);
     }
 
-    // sensor / binary_sensor / everything else: read-only value
-    return this.card(
-      name,
-      dev.entity_id,
-      html`<div class="value big">${displayState(entity)}</div>`
-    );
+    // sensor / binary_sensor / everything else: read-only value on its own
+    // line below the name so long readings (e.g. "193044.74 Wh") wrap instead
+    // of overflowing the card.
+    return this.card(name, "", nothing, html`<div class="value big">${displayState(entity)}</div>`);
   }
 
   private toggleBtn(entityId: string, on: boolean): TemplateResult {
@@ -270,7 +273,7 @@ export class DevicePanel extends LitElement {
       <div class="row">
         <div>
           <div class="name">${name}</div>
-          <div class="sub">${sub}</div>
+          ${sub ? html`<div class="sub">${sub}</div>` : nothing}
         </div>
         ${header}
       </div>

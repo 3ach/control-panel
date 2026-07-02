@@ -2,7 +2,6 @@ import { LitElement, html, svg, css, nothing, type SVGTemplateResult } from "lit
 import { customElement, property } from "lit/decorators.js";
 import type { FloorplanConfig, RoomConfig, Hass } from "./types.js";
 import { roomGeometry, poly, project } from "./iso.js";
-import { isOn, roomDevices } from "./ha-utils.js";
 
 /**
  * <iso-floorplan> — renders the home as a clickable isometric blueprint.
@@ -63,16 +62,6 @@ export class IsoFloorplan extends LitElement {
       paint-order: stroke;
       stroke: rgba(255, 255, 255, 0.85);
       stroke-width: 3.5px;
-    }
-    .count {
-      pointer-events: none;
-      fill: var(--ink);
-      opacity: 0.7;
-      font: 700 10px/1 "Trebuchet MS", system-ui, sans-serif;
-      text-anchor: middle;
-      paint-order: stroke;
-      stroke: rgba(255, 255, 255, 0.8);
-      stroke-width: 3px;
     }
   `;
 
@@ -165,8 +154,6 @@ export class IsoFloorplan extends LitElement {
     const g = roomGeometry(room.x, room.y, room.w, room.d, h, room.notch);
     const accent = room.color ?? "#3fb6ff";
     const selected = this.selected === room.id;
-    const devices = roomDevices(this.hass, room);
-    const onCount = devices.filter((d) => isOn(this.hass?.states[d.entity_id])).length;
     const labelPt = project(room.x + room.w / 2, room.y + room.d / 2, h);
 
     return svg`
@@ -188,10 +175,7 @@ export class IsoFloorplan extends LitElement {
               fill=${this.shade(accent, wall.face === "left" ? 0.34 : 0.18)} />`
         )}
         <polygon class="floor" points=${poly(g.floor)} fill=${accent} />
-        <text class="label" x=${labelPt.x} y=${labelPt.y - 6}>${room.name}</text>
-        <text class="count" x=${labelPt.x} y=${labelPt.y + 10}>
-          ${onCount > 0 ? `${onCount} on` : `${devices.length} devices`}
-        </text>
+        <text class="label" x=${labelPt.x} y=${labelPt.y + 4}>${room.name}</text>
       </g>
     `;
   }
