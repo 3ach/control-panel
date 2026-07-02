@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { Hass, FloorplanConfig } from "./types.js";
 import { FLOORPLAN } from "./config.js";
+import { DEFAULT_HIDE_LABELS } from "./ha-utils.js";
 import "./iso-floorplan.js";
 import "./device-panel.js";
 
@@ -180,7 +181,11 @@ export class ControlPanel extends LitElement {
           ></iso-floorplan>
         </div>
         <div class="panel">
-          <device-panel .hass=${this.hass} .room=${room}></device-panel>
+          <device-panel
+            .hass=${this.hass}
+            .room=${room}
+            .excludeLabels=${this.config.excludeLabels ?? DEFAULT_HIDE_LABELS}
+          ></device-panel>
         </div>
       </div>
     `;

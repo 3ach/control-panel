@@ -58,6 +58,28 @@ the area):
     - entity_id: switch.coffee_machine
 ```
 
+### Hiding devices
+
+Two ways to keep an entity out of a room's auto-filled list:
+
+- **HA "hidden" entities** are always skipped (entity settings → Advanced →
+  *Hidden*). Note this hides it everywhere in HA, not just here.
+- **A Label**, to hide it only from this panel: create a Label in **Settings →
+  Areas, Labels & Zones → Labels** (default id `no_panel`), then tag any
+  entities you want excluded. Change or add label ids via top-level config:
+
+  ```yaml
+  floorplan:
+    excludeLabels: [no_panel, hide_from_dashboard]
+    rooms: ...
+  ```
+
+  Labels don't affect rooms that use an explicit `devices:` list — that list is
+  taken verbatim.
+
+HA **groups** are auto-collapsed: if a group entity and its members are both in
+an area, only the group is shown (create the group, assign it to the area).
+
 ## Install into Home Assistant (via HACS — OTA updates)
 
 This is the recommended path: HACS pulls the built bundle from this repo's

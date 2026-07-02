@@ -14,6 +14,7 @@ import {
   coverCommand,
   displayState,
   roomDevices,
+  DEFAULT_HIDE_LABELS,
 } from "./ha-utils.js";
 
 /**
@@ -24,6 +25,7 @@ import {
 export class DevicePanel extends LitElement {
   @property({ attribute: false }) hass?: Hass;
   @property({ attribute: false }) room?: RoomConfig;
+  @property({ attribute: false }) excludeLabels: string[] = DEFAULT_HIDE_LABELS;
 
   static override styles = css`
     :host {
@@ -294,7 +296,7 @@ export class DevicePanel extends LitElement {
     const room = this.room;
     // Keep the area/domain ordering, but push unavailable devices to the end so
     // they don't bury working ones (Array.sort is stable).
-    const devices = [...roomDevices(this.hass, room)].sort(
+    const devices = [...roomDevices(this.hass, room, this.excludeLabels)].sort(
       (a, b) =>
         Number(isUnavailable(this.hass?.states[a.entity_id])) -
         Number(isUnavailable(this.hass?.states[b.entity_id]))

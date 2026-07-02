@@ -24,6 +24,7 @@ export interface HassEntityEntry {
   device_id?: string | null;
   hidden_by?: string | null;
   entity_category?: string | null; // "config" | "diagnostic" | null
+  labels?: string[] | null; // HA Label ids applied to the entity
 }
 
 export interface HassDeviceEntry {
@@ -94,5 +95,9 @@ export interface FloorplanConfig {
   title?: string;
   /** Floors, in display order. Omit for a single-level home. */
   levels?: LevelConfig[];
+  /** HA Label ids whose entities are hidden from the panel's area auto-fill.
+   *  Defaults to ["no_panel"] — create that Label in HA and tag anything you
+   *  want excluded. Does not affect rooms with an explicit `devices` list. */
+  excludeLabels?: string[];
   rooms: RoomConfig[];
 }

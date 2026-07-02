@@ -22,6 +22,9 @@ const AREA_DOMAIN_ORDER = [
 ];
 const AREA_DOMAINS = new Set(AREA_DOMAIN_ORDER);
 
+/** Default HA Label id used to hide entities from the panel. */
+export const DEFAULT_HIDE_LABELS = ["no_panel"];
+
 /** Match a room's `area` (an area_id or a display name) to a real area_id. */
 export function resolveAreaId(hass: Hass, areaRef: string): string | undefined {
   if (!hass.areas) return undefined;
@@ -30,13 +33,20 @@ export function resolveAreaId(hass: Hass, areaRef: string): string | undefined {
   return Object.values(hass.areas).find((a) => a.name?.toLowerCase() === lc)?.area_id;
 }
 
-/** Controllable entity_ids assigned to an area (directly or via their device). */
-export function entitiesInArea(hass: Hass, areaId: string): string[] {
+/** Controllable entity_ids assigned to an area (directly or via their device).
+ *  Entities carrying any of `excludeLabels` (HA Label ids) are skipped. */
+export function entitiesInArea(
+  hass: Hass,
+  areaId: string,
+  excludeLabels: string[] = []
+): string[] {
   const entities = hass.entities ?? {};
+  const exclude = new Set(excludeLabels.map((l) => l.toLowerCase()));
   const result: string[] = [];
   for (const e of Object.values(entities)) {
     if (e.hidden_by) continue;
     if (e.entity_category === "config" || e.entity_category === "diagnostic") continue;
+    if (exclude.size && e.labels?.some((l) => exclude.has(l.toLowerCase()))) continue;
     if (!AREA_DOMAINS.has(domainOf(e.entity_id))) continue;
     const area =
       e.area_id ?? (e.device_id ? hass.devices?.[e.device_id]?.area_id : null);
@@ -63,12 +73,18 @@ export function entitiesInArea(hass: Hass, areaId: string): string[] {
   return collapsed.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
-/** The effective devices for a room: explicit list wins, else Area auto-fill. */
-export function roomDevices(hass: Hass | undefined, room: RoomConfig): DeviceRef[] {
+/** The effective devices for a room: explicit list wins, else Area auto-fill
+ *  (with entities carrying any `excludeLabels` filtered out). */
+export function roomDevices(
+  hass: Hass | undefined,
+  room: RoomConfig,
+  excludeLabels: string[] = []
+): DeviceRef[] {
   if (room.devices?.length) return room.devices;
   if (hass && room.area) {
     const areaId = resolveAreaId(hass, room.area);
-    if (areaId) return entitiesInArea(hass, areaId).map((entity_id) => ({ entity_id }));
+    if (areaId)
+      return entitiesInArea(hass, areaId, excludeLabels).map((entity_id) => ({ entity_id }));
   }
   return room.devices ?? [];
 }
