@@ -12,6 +12,30 @@ export const CP_VERSION = __CP_VERSION__;
 // eslint-disable-next-line no-console
 console.info(`%ccontrol-panel v${CP_VERSION}`, "font-weight:bold");
 
+// Self cache-bust: browsers cache this module by URL and HACS updates don't
+// change the URL, so a stale copy can keep running forever. On load, re-fetch
+// our own URL with revalidation (this also refreshes the HTTP cache entry);
+// if the served bytes differ from what ran last time, reload once so the
+// fresh module takes over. Keyed per-URL in localStorage — no reload loops:
+// after the reload the fetched hash matches the stored one.
+const moduleUrl = import.meta.url;
+if (moduleUrl.includes("/hacsfiles/")) {
+  fetch(moduleUrl, { cache: "no-cache" })
+    .then((res) => (res.ok ? res.text() : ""))
+    .then((text) => {
+      if (!text) return;
+      let h = 5381;
+      for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) | 0;
+      const hash = String(h >>> 0);
+      const key = `cp-bundle-hash:${moduleUrl}`;
+      const prev = localStorage.getItem(key);
+      if (prev === hash) return;
+      localStorage.setItem(key, hash);
+      if (prev !== null) location.reload();
+    })
+    .catch(() => {});
+}
+
 /**
  * <control-panel> — the element Home Assistant mounts as a custom panel.
  *
