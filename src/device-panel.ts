@@ -23,6 +23,26 @@ import {
   DEFAULT_HIDE_LABELS,
 } from "./ha-utils.js";
 
+/** Levenshtein distance between lowercased names ("Bedroom Ambient" vs
+ *  "Bedroom" → 8): used to pick the sensor that belongs to the room itself. */
+function nameDistance(a: string, b: string): number {
+  const s = a.toLowerCase();
+  const t = b.toLowerCase();
+  let prev = Array.from({ length: t.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= s.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= t.length; j++) {
+      cur[j] = Math.min(
+        prev[j] + 1,
+        cur[j - 1] + 1,
+        prev[j - 1] + (s[i - 1] === t[j - 1] ? 0 : 1)
+      );
+    }
+    prev = cur;
+  }
+  return prev[t.length];
+}
+
 /**
  * <device-panel> — side sheet listing the devices in the selected room,
  * with the right control per entity domain.
@@ -301,10 +321,7 @@ export class DevicePanel extends LitElement {
     });
     return html`<div class="device">
       <div class="row">
-        <div>
-          <div class="name">${group.name}</div>
-          <div class="sub">${group.kind === "electrical" ? "power monitor" : "environment"}</div>
-        </div>
+        <div class="name">${group.name}</div>
       </div>
       <div class="readings ${group.kind}">${readings}</div>
     </div>`;
@@ -355,17 +372,25 @@ export class DevicePanel extends LitElement {
         ? item.items.every((i) => isUnavailable(this.hass?.states[i.ref.entity_id]))
         : isUnavailable(this.hass?.states[item.entity_id]);
     const grouped = groupRoomDevices(this.hass, roomDevices(this.hass, room, this.excludeLabels));
-    // Environmental readings live in the header, not as a card in the list.
-    const env = grouped
-      .filter((g): g is SensorGroup => isSensorGroup(g) && g.kind === "environmental")
-      .flatMap((g) => g.items)
+    // The room's own environmental readings live in the header, not as a card.
+    // With several environmental sensors in one area, the one named most like
+    // the room is the room's; the others stay in the list as regular cards.
+    const envGroups = grouped.filter(
+      (g): g is SensorGroup => isSensorGroup(g) && g.kind === "environmental"
+    );
+    const headerGroup = envGroups.length
+      ? envGroups.reduce((best, g) =>
+          nameDistance(g.name, room.name) < nameDistance(best.name, room.name) ? g : best
+        )
+      : undefined;
+    const env = (headerGroup?.items ?? [])
       .map(({ ref }) => this.hass?.states[ref.entity_id])
       .filter((e) => !isUnavailable(e))
       .map((e) => displayState(e));
     // Keep the area/domain ordering, but push unavailable devices to the end so
     // they don't bury working ones (Array.sort is stable).
     const items = grouped
-      .filter((g) => !(isSensorGroup(g) && g.kind === "environmental"))
+      .filter((g) => g !== headerGroup)
       .sort((a, b) => Number(dead(a)) - Number(dead(b)));
     return html`
       <header>
