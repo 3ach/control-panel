@@ -30,7 +30,6 @@ const C = {
 };
 
 export const FLOORPLAN: FloorplanConfig = {
-  title: "Demo Home",
   levels: [
     { id: "main", name: "Main" },
     { id: "upper", name: "Upstairs" },

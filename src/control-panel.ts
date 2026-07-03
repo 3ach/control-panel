@@ -79,11 +79,6 @@ export class ControlPanel extends LitElement {
       background: #fffdf7;
       border-bottom: 3px solid var(--ink);
     }
-    .topbar h1 {
-      margin: 0;
-      font: 800 20px/1 "Trebuchet MS", system-ui, sans-serif;
-      letter-spacing: 0.3px;
-    }
     .topbar .spacer {
       flex: 1;
     }
@@ -158,7 +153,6 @@ export class ControlPanel extends LitElement {
     return html`
       <div class="app ${this.narrow ? "narrow" : ""}" @room-select=${this.onRoomSelect}>
         <div class="topbar">
-          <h1>${this.config.title ?? "Control Panel"}</h1>
           <span class="spacer"></span>
           ${this.levels.length > 1
             ? html`<div class="levels">

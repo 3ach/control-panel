@@ -16,7 +16,6 @@
 # auto-fills that area's controllable entities. `notch` carves the front-right
 # corner into an L-shape. Omit `levels` for a single-floor home.
 floorplan:
-  title: "My Home"
   levels:
     - id: main
       name: Main

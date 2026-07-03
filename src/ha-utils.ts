@@ -143,6 +143,44 @@ export interface SensorGroup {
 export const isSensorGroup = (item: DeviceRef | SensorGroup): item is SensorGroup =>
   "items" in item;
 
+// Display order for readings within a combined card.
+const CLASS_ORDER: Record<SensorGroupKind, string[]> = {
+  electrical: [
+    "voltage",
+    "current",
+    "power",
+    "apparent_power",
+    "reactive_power",
+    "frequency",
+    "power_factor",
+    "energy",
+  ],
+  environmental: ["temperature", "humidity", "pressure", "atmospheric_pressure", "illuminance"],
+};
+
+function sortGroupItems(
+  hass: Hass,
+  kind: SensorGroupKind,
+  items: SensorGroupItem[]
+): SensorGroupItem[] {
+  const order = CLASS_ORDER[kind];
+  const classOf = (i: SensorGroupItem): string => {
+    const dc = hass.states[i.ref.entity_id]?.attributes.device_class;
+    return typeof dc === "string" ? dc : "";
+  };
+  const rank = (i: SensorGroupItem) => {
+    const idx = order.indexOf(classOf(i));
+    return idx === -1 ? order.length : idx;
+  };
+  // Among readings of the same class, the plainly-named one leads
+  // ("Power" before "Instantaneous Demand").
+  const plain = (i: SensorGroupItem) =>
+    i.label.toLowerCase() === classOf(i).replace(/_/g, " ") ? 0 : 1;
+  return items.sort(
+    (a, b) => rank(a) - rank(b) || plain(a) - plain(b) || a.label.localeCompare(b.label)
+  );
+}
+
 /** Merge sensors that belong to one physical device (and one kind) into a
  *  SensorGroup; everything else passes through untouched. A group takes the
  *  list position of its first member. */
@@ -184,7 +222,11 @@ export function groupRoomDevices(
     out.push({
       kind,
       name,
-      items: members.map((m) => ({ ref: m, label: readingLabel(hass, m, name) })),
+      items: sortGroupItems(
+        hass,
+        kind,
+        members.map((m) => ({ ref: m, label: readingLabel(hass, m, name) }))
+      ),
     });
   }
   return out;

@@ -98,7 +98,6 @@ export interface LevelConfig {
 }
 
 export interface FloorplanConfig {
-  title?: string;
   /** Floors, in display order. Omit for a single-level home. */
   levels?: LevelConfig[];
   /** HA Label ids whose entities are hidden from the panel's area auto-fill.
