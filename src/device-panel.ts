@@ -66,15 +66,13 @@ export class DevicePanel extends LitElement {
       font-size: 22px;
       font-weight: 800;
     }
-    header p {
-      display: inline-block;
-      margin: 8px 0 0;
-      padding: 3px 10px;
-      background: #ffd23f;
-      border: 2px solid var(--ink);
-      border-radius: 999px;
-      font-size: 12px;
+    /* Room-level environmental readings (temp · humidity · …) under the title. */
+    header .env {
+      margin-top: 6px;
+      font-size: 13px;
       font-weight: 700;
+      color: #6b6357;
+      font-variant-numeric: tabular-nums;
     }
     .list {
       flex: 1 1 auto;
@@ -356,23 +354,32 @@ export class DevicePanel extends LitElement {
       isSensorGroup(item)
         ? item.items.every((i) => isUnavailable(this.hass?.states[i.ref.entity_id]))
         : isUnavailable(this.hass?.states[item.entity_id]);
+    const grouped = groupRoomDevices(this.hass, roomDevices(this.hass, room, this.excludeLabels));
+    // Environmental readings live in the header, not as a card in the list.
+    const env = grouped
+      .filter((g): g is SensorGroup => isSensorGroup(g) && g.kind === "environmental")
+      .flatMap((g) => g.items)
+      .map(({ ref }) => this.hass?.states[ref.entity_id])
+      .filter((e) => !isUnavailable(e))
+      .map((e) => displayState(e));
     // Keep the area/domain ordering, but push unavailable devices to the end so
     // they don't bury working ones (Array.sort is stable).
-    const items = groupRoomDevices(
-      this.hass,
-      roomDevices(this.hass, room, this.excludeLabels)
-    ).sort((a, b) => Number(dead(a)) - Number(dead(b)));
+    const items = grouped
+      .filter((g) => !(isSensorGroup(g) && g.kind === "environmental"))
+      .sort((a, b) => Number(dead(a)) - Number(dead(b)));
     return html`
       <header>
         <h2>${room.name}</h2>
-        <p>${items.length} device${items.length === 1 ? "" : "s"}</p>
+        ${env.length ? html`<div class="env">${env.join(" · ")}</div>` : nothing}
       </header>
       <div class="list">
         ${items.length
           ? items.map((d) => (isSensorGroup(d) ? this.renderGroup(d) : this.renderDevice(d)))
-          : html`<div class="sub" style="padding:6px 4px">
-              No devices found for area “${room.area ?? room.name}”.
-            </div>`}
+          : env.length
+            ? nothing
+            : html`<div class="sub" style="padding:6px 4px">
+                No devices found for area “${room.area ?? room.name}”.
+              </div>`}
       </div>
     `;
   }
