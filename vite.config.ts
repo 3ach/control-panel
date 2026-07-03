@@ -1,9 +1,11 @@
 import { defineConfig } from "vite";
+import { version } from "./package.json";
 
 // Two modes:
 //  - `vite` (dev)     -> serves index.html with a mock Home Assistant for local design work
 //  - `vite build`     -> bundles a single ES module you load into HA as a panel_custom resource
 export default defineConfig(({ command }) => ({
+  define: { __CP_VERSION__: JSON.stringify(version) },
   build: {
     lib: {
       entry: "src/control-panel.ts",

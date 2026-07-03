@@ -6,6 +6,12 @@ import { DEFAULT_HIDE_LABELS } from "./ha-utils.js";
 import "./iso-floorplan.js";
 import "./device-panel.js";
 
+// Injected by vite from package.json so the running bundle is identifiable.
+declare const __CP_VERSION__: string;
+export const CP_VERSION = __CP_VERSION__;
+// eslint-disable-next-line no-console
+console.info(`%ccontrol-panel v${CP_VERSION}`, "font-weight:bold");
+
 /**
  * <control-panel> — the element Home Assistant mounts as a custom panel.
  *
