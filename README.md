@@ -122,9 +122,13 @@ HAOS never builds anything.
                                       # don't use `home` — HA 25.12+ reserves it)
        sidebar_title: Floor Plan
        sidebar_icon: mdi:floor-plan
-       module_url: /hacsfiles/control-panel/control-panel.js
+       module_url: /hacsfiles/control-panel/control-panel.js?v=1.0.9
        config: !include control-panel-floorplan.yaml
    ```
+
+   > The `?v=` query is a cache-buster: browsers cache the module by URL, so
+   > after a HACS update bump it to the new version (or hard-refresh with
+   > Ctrl+Shift+R). HACS only cache-busts Lovelace resources, not custom panels.
 
    (Without `config:`, the panel falls back to the bundled demo layout.)
 5. **Restart Home Assistant** once. The panel appears in the sidebar.
